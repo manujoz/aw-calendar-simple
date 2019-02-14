@@ -215,8 +215,8 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 					position: absolute;
 					width: 30px;
 					height: 30px;
-					top: calc(50% - 15px);
-					left: calc(50% - 15px);
+					top: calc(50% - 17px);
+					left: calc(50% - 17px);
 					border-radius: var(--aw-calendar-today-radius,50%);
 					border: solid 2px var(--aw-calendar-today-background-color,#999999);
 					content: "";
