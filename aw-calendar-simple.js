@@ -1907,7 +1907,6 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 
 		setTimeout(() => {
 			if( !this.responsefunc ) {
-				console.log( "DISPARMOS", this.event );
 				this.dispatchEvent( this.event );
 			} else if( typeof this.responsefunc == "function" ) {
 				this.responsefunc( this.fechaSelected );
