@@ -817,7 +817,7 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 			// Marcamos el día seleccionado
 
 			var attrSel = "";
-			if( fecha.ano === this.fechaSelected.ano && fecha.mes == this.fechaSelected.mes && this.fechaSelected.dia === i ) {
+			if( fecha.ano === this.fechaSelected.ano && fecha.mes == (this.fechaSelected.mes - 1) && this.fechaSelected.dia === i ) {
 				attrSel = " selected";
 			}
 
@@ -1905,11 +1905,13 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 
 		// Disparamos el evento
 
-		if( !this.responsefunc ) {
-			this.dispatchEvent( this.event );
-		} else if( typeof this.responsefunc == "function" ) {
-			this.responsefunc( this.fechaSelected );
-		}
+		setTimeout(() => {
+			if( !this.responsefunc ) {
+				this.dispatchEvent( this.event );
+			} else if( typeof this.responsefunc == "function" ) {
+				this.responsefunc( this.fechaSelected );
+			}
+		}, 100);
 		
 		// NOTE: Quitamos el disparador del evento al cargar el conenido debido
 		//		 a que no le encuentro funcionalidad.
