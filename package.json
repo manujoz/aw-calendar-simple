@@ -1,11 +1,17 @@
 {
 	"name": "aw_calendar",
-	"version": "2.1.0",
-	"description": "Calendarios de Arisman Webs",
+	"version": "2.1.1",
+	"description": "Calendario realizado en Polymer 3",
 	"keywords": [
-		"Arisman Webs"
+		"Polymer",
+		"Web Components",
+		"Calendar"
 	],
-	"author": "Arisman Webs",
+	"author": "Manu Overa",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/manujoz/aw-calendar-simple"
+	},
 	"dependencies": {
 		"aw_polymer_3": "^1.1.0",
 		"aw_extern_functions": "^2.0.0"
