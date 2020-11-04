@@ -1,0 +1,14 @@
+{
+	"name": "aw_calendar",
+	"version": "2.1.0",
+	"description": "Calendarios de Arisman Webs",
+	"keywords": [
+		"Arisman Webs"
+	],
+	"author": "Arisman Webs",
+	"dependencies": {
+		"aw_polymer_3": "^1.1.0",
+		"aw_extern_functions": "^2.0.0"
+	},
+	"license": "ISC"
+}

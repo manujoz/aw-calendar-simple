@@ -92,6 +92,7 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 					width: 100%;
 					border: solid 1px transparent;
 					transition: all .2s;
+					box-sizing: border-box;
 				}
 				.cont_slider_selectable_cal input:focus {
 					background-color: var(--aw-calendar-input-background-color-focused,#F6F6F6);
@@ -345,12 +346,13 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 				type: Object,
 				value: {
 					name: null,
-					ano: null,
-					mes: null,
-					dia: null,
-					hora: null,
-					minuto: null,
+					year: null,
+					month: null,
+					day: null,
+					hour: null,
+					minute: null,
 					string: null,
+					date: null,
 					format: {}
 				}
 			},
@@ -365,6 +367,10 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 			listenPestSliderOpen: { type: Function },
 			listenPestSlider: { type: Function },
 			listenCellDay: { type: Function },
+
+			// Variables de control
+			selectAnyDate: { type: Boolean, value: false },
+			fechaSetted: { type: String, value: "" }
 		};
 	}
 
@@ -394,9 +400,9 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 			});
 		}
 
-		// Resolvemos
-
-		this.removeAttribute( "unresolved" );
+		if( this.fechainit ) {
+			this.selectAnyDate = true;
+		}
 
 		// Creamos el calendario
 
@@ -405,6 +411,10 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 		// Ponemos a la escucha los inputs de años
 
 		this._listeners();
+
+		// Resolvemos
+
+		this.removeAttribute( "unresolved" );
 	}
 
 	/**
@@ -418,6 +428,113 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 		// Dejamos de escuchar elementos
 
 		this._unlisteners();
+	}
+
+	/**
+	 * @method	_get_date
+	 * 
+	 * Devuelve la fecha seleccionada en el calendario
+	 */
+	get_date()
+	{
+		if( !this.selectAnyDate ) {
+			return null;
+		}
+
+		this.fechaSelected.name = this.name;
+
+		this.fechaSelected.year = this.fecha.ano;
+		this.fechaSelected.month = this.fecha.mes + 1;
+		this.fechaSelected.day = this.fecha.dia;
+		this.fechaSelected.hour = ( this.fecha.hora ) ? this.fecha.hora : 0;
+		this.fechaSelected.minute = ( this.fecha.minuto ) ? this.fecha.minuto: 0;
+		
+		// Ponemos el string
+
+		var string = this.fechaSelected.year + "-" + this.fechaSelected.month + "-" + this.fechaSelected.day;
+		if( this.time ) {
+			string += " " + this._printableHour( this.fechaSelected );
+		}
+
+		this.fechaSelected.string = string;
+
+		// Functión de formatear fecha
+
+		this.fechaSelected.format = {
+			numeric: this._getFormatDate(),
+			numericHour: this._getFormatDate( "numerica", false, true ),
+			short: this._getFormatDate( "corta" ),
+			shortHour: this._getFormatDate( "corta", false, true ),
+			shortDay: this._getFormatDate( "corta", true, false ),
+			shortFull: this._getFormatDate( "corta", true, true ),
+			long: this._getFormatDate( "larga" ),
+			longHour: this._getFormatDate( "larga", false, true ),
+			longDay: this._getFormatDate( "larga", true, false ),
+			longFull: this._getFormatDate( "larga", true, true )
+		}
+		
+		// Asignamos el objeto de fecha
+		this.fechaSelected.date = new Date( this.fechaSelected.string ); 
+
+		return this.fechaSelected;
+	}
+
+	/**
+	 * @method	reset
+	 * 
+	 * Resetea el calendario a su estado inicial
+	 */
+	reset()
+	{
+		this.setAttribute( "unresolved", "" );
+
+		// Resetamos variables de control
+		if( !this.fechainit ) {
+			this.selectAnyDate = false;
+		} else {
+			this.selectAnyDate = true;
+		}
+
+		// Dejamos de escuchar los eventos en el día actual
+		this._unlisteners();
+
+		// Vaciamos las divisiones
+		this.$.selectable_years.querySelector( ".slider" ).textContent = '';
+		this.$.selectable_months.querySelector( ".slider" ).textContent = '';
+		this.$.selectable_hour.querySelector( ".slider" ).textContent = '';
+		this.shadowRoot.querySelector( ".cont_slider_calendar" ).textContent = '';
+
+		this._createCalendar();
+		this._listeners();
+
+		this.removeAttribute( "unresolved" );
+	}
+
+	/**
+	 * @method	set_date
+	 * 
+	 * Asigna una fecha dada al calendario
+	 * 
+	 * @param {string} date Fecha que queremos activar en el calendario
+	 */
+	set_date( date )
+	{
+		if( !date.match( /^([0-9]{4}\-((1[0-2])|(0?[1-9]))\-((0?[1-9])|(1[0-9])|(2[0-9])|(3[0-1])))(\s((0?[0-9])|(1[0-9])|(2[0-3]))\:((0?[0-9])|([1-5][0-9])))?$/) ) {
+			console.error( "[aw-calendar-simple.js#set_date]: You have not passed a correct date" );
+			return;
+		}
+
+		// Ponemos la fecha dada como fecha de inicio
+		this.fechaSetted = date;
+
+		// Reseteamos el formulario
+		this.reset();
+
+		// Ponemos que hay fecha seleccionada
+		this.selectAnyDate = true;
+
+		// Resteamos el fecha setted
+		this.fechaSetted = "";
 	}
 
 	/**
@@ -442,6 +559,53 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 	}
 
 	/**
+	 * @method	getFormatDate
+	 * 
+	 * Formatea la fecha a un formato específico.
+	 * 
+	 * @param	{string}	tipo		Longitud en el que queremos la fecha (numerica|corta|larga).
+	 * @param	{boolean}	ponerDia	Determina si queremos mostrar el día de la semana. 
+	 * @param	{boolean}	ponerHora	Determina si queremos mostrar la hora.
+	 * @return	{string}				Fecha formateada.
+	 */
+	_getFormatDate( tipo = "numerica", ponerDia = false, ponerHora = false ) {
+		let mesToDate = this.fechaSelected.month - 1;
+		var fecha = new Date( this.fechaSelected.year, mesToDate, this.fechaSelected.day );
+		var fechaFormat = null;
+		var conj = ( this.lang == "es" || this.lang == "ca" ) ? "de" : "";
+
+		// Ajustamos el formato de la fecha
+
+		if( tipo === "numerica" ) {
+			if( this.lang != "en" ) {
+				fechaFormat = this.fechaSelected.day + "/" + this.fechaSelected.month + "/" + this.fechaSelected.year;
+			} else {
+				fechaFormat = this.fechaSelected.year + "/" + this.fechaSelected.month + "/" + this.fechaSelected.day;
+			}			
+		} else if ( tipo === "corta" ) {
+			fechaFormat = this.fechaSelected.day + " " + this.mesesshort[ mesToDate ] + " " + this.fechaSelected.year;
+		} else {
+			fechaFormat = this.fechaSelected.day + " " + conj + " " + this.meses[ mesToDate ] + " " + conj + " " + this.fechaSelected.year;
+		}
+		
+		// Ponemos el día si corresponde
+
+		if( ponerDia && tipo === "corta" ) {
+			fechaFormat = this.diasshort[ ( fecha.getDay() > 0 ) ? fecha.getDay() - 1 : 6 ] + ", " + fechaFormat;
+		} else if( ponerDia ) {
+			fechaFormat = this.dias[ ( fecha.getDay() > 0 ) ? fecha.getDay() - 1 : 6 ] + ", " + fechaFormat;
+		}
+
+		// Ponemos la hora si corresponde
+
+		if( ponerHora && this.time ) {
+			fechaFormat += " " + this._printableHour( this.fechaSelected );
+		}
+
+		return fechaFormat;
+	}
+
+	/**
 	 * @method	_printableHour
 	 * 
 	 * Imprime la tabla de la hora.
@@ -449,8 +613,8 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 	 * @param	{object}	fecha		Objeto de fecha.
 	 */
 	_printableHour( fecha ) {
-		var minuto = fecha.minuto;
-		var hora = fecha.hora;
+		var minuto = ( fecha.minute !== undefined ) ? fecha.minute : fecha.minuto;
+		var hora = ( fecha.hour !== undefined ) ? fecha.hour : fecha.hora;
 		
 		if( minuto < 10 ) {
 			minuto = "0" + minuto;
@@ -639,8 +803,8 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 
 		// Asignamos si ha fecha de inicio
 
-		if( this.fechainit ) {
-			var sf = this.fechainit.split( " " );
+		if( this.fechainit || this.fechaSetted ) {
+			var sf = ( this.fechaSetted ) ? this.fechaSetted.split( " " ) : this.fechainit.split( " " );
 
 			fecha = new Date( sf[ 0 ] );
 			fecha.setHours( 0 );
@@ -660,7 +824,7 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 
 		// Si hay fecha de inicio disparamos el evento
 
-		if( this.fechainit ) {
+		if( this.fechainit || this.fechaSetted ) {
 			this._fechaDispatch();
 		}
 
@@ -817,7 +981,7 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 			// Marcamos el día seleccionado
 
 			var attrSel = "";
-			if( fecha.ano === this.fechaSelected.ano && fecha.mes == (this.fechaSelected.mes - 1) && this.fechaSelected.dia === i ) {
+			if( fecha.ano === this.fechaSelected.year && fecha.mes == (this.fechaSelected.month - 1) && this.fechaSelected.day === i ) {
 				attrSel = " selected";
 			}
 
@@ -1569,7 +1733,7 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 
 		// Disparamos el evento si hay fecha completa
 
-		if( this.fechaSelected.ano ) {
+		if( this.fechaSelected.year ) {
 			this._fechaDispatch();
 		}
 	}
@@ -1733,7 +1897,7 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 
 		// Disparamos el evento si hay fecha completa
 
-		if( this.fechaSelected.ano ) {
+		if( this.fechaSelected.year ) {
 			this._fechaDispatch();
 		}
 	}
@@ -1819,53 +1983,6 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 	}
 
 	/**
-	 * @method	getFormatDate
-	 * 
-	 * Formatea la fecha a un formato específico.
-	 * 
-	 * @param	{string}	tipo		Longitud en el que queremos la fecha (numerica|corta|larga).
-	 * @param	{boolean}	ponerDia	Determina si queremos mostrar el día de la semana. 
-	 * @param	{boolean}	ponerHora	Determina si queremos mostrar la hora.
-	 * @return	{string}				Fecha formateada.
-	 */
-	getFormatDate( tipo = "numerica", ponerDia = false, ponerHora = false ) {
-		let mesToDate = this.fechaSelected.mes - 1;
-		var fecha = new Date( this.fechaSelected.ano, mesToDate, this.fechaSelected.dia );
-		var fechaFormat = null;
-		var conj = ( this.lang == "es" || this.lang == "ca" ) ? "de" : "";
-
-		// Ajustamos el formato de la fecha
-
-		if( tipo === "numerica" ) {
-			if( this.lang != "en" ) {
-				fechaFormat = this.fechaSelected.dia + "/" + this.fechaSelected.mes + "/" + this.fechaSelected.ano;
-			} else {
-				fechaFormat = this.fechaSelected.ano + "/" + this.fechaSelected.mes + "/" + this.fechaSelected.dia;
-			}			
-		} else if ( tipo === "corta" ) {
-			fechaFormat = this.fechaSelected.dia + " " + this.mesesshort[ mesToDate ] + " " + this.fechaSelected.ano;
-		} else {
-			fechaFormat = this.fechaSelected.dia + " " + conj + " " + this.meses[ mesToDate ] + " " + conj + " " + this.fechaSelected.ano;
-		}
-		
-		// Ponemos el día si corresponde
-
-		if( ponerDia && tipo === "corta" ) {
-			fechaFormat = this.diasshort[ ( fecha.getDay() > 0 ) ? fecha.getDay() - 1 : 6 ] + ", " + fechaFormat;
-		} else if( ponerDia ) {
-			fechaFormat = this.dias[ ( fecha.getDay() > 0 ) ? fecha.getDay() - 1 : 6 ] + ", " + fechaFormat;
-		}
-
-		// Ponemos la hora si corresponde
-
-		if( ponerHora && this.time ) {
-			fechaFormat += " " + this._printableHour( this.fechaSelected );
-		}
-
-		return fechaFormat;
-	}
-
-	/**
 	 * @method	_fechaDispatch
 	 * 
 	 * Dispara el evento personalizado del calendario.
@@ -1873,15 +1990,15 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 	_fechaDispatch() {
 		this.fechaSelected.name = this.name;
 
-		this.fechaSelected.ano = this.fecha.ano;
-		this.fechaSelected.mes = this.fecha.mes + 1;
-		this.fechaSelected.dia = this.fecha.dia;
-		this.fechaSelected.hora = ( this.fecha.hora ) ? this.fecha.hora : 0;
-		this.fechaSelected.minuto = ( this.fecha.minuto ) ? this.fecha.minuto: 0;
+		this.fechaSelected.year = this.fecha.ano;
+		this.fechaSelected.month = this.fecha.mes + 1;
+		this.fechaSelected.day = this.fecha.dia;
+		this.fechaSelected.hour = ( this.fecha.hora ) ? this.fecha.hora : 0;
+		this.fechaSelected.minute = ( this.fecha.minuto ) ? this.fecha.minuto: 0;
 		
 		// Ponemos el string
 
-		var string = this.fechaSelected.ano + "-" + this.fechaSelected.mes + "-" + this.fechaSelected.dia;
+		var string = this.fechaSelected.year + "-" + this.fechaSelected.month + "-" + this.fechaSelected.day;
 		if( this.time ) {
 			string += " " + this._printableHour( this.fechaSelected );
 		}
@@ -1891,17 +2008,20 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 		// Functión de formatear fecha
 
 		this.fechaSelected.format = {
-			numeric: this.getFormatDate(),
-			numericHour: this.getFormatDate( "numerica", false, true ),
-			short: this.getFormatDate( "corta" ),
-			shortHour: this.getFormatDate( "corta", false, true ),
-			shortDay: this.getFormatDate( "corta", true, false ),
-			shortFull: this.getFormatDate( "corta", true, true ),
-			long: this.getFormatDate( "larga" ),
-			longHour: this.getFormatDate( "larga", false, true ),
-			longDay: this.getFormatDate( "larga", true, false ),
-			longFull: this.getFormatDate( "larga", true, true )
-		}             
+			numeric: this._getFormatDate(),
+			numericHour: this._getFormatDate( "numerica", false, true ),
+			short: this._getFormatDate( "corta" ),
+			shortHour: this._getFormatDate( "corta", false, true ),
+			shortDay: this._getFormatDate( "corta", true, false ),
+			shortFull: this._getFormatDate( "corta", true, true ),
+			long: this._getFormatDate( "larga" ),
+			longHour: this._getFormatDate( "larga", false, true ),
+			longDay: this._getFormatDate( "larga", true, false ),
+			longFull: this._getFormatDate( "larga", true, true )
+		}
+		
+		// Asignamos el objeto de fecha
+		this.fechaSelected.date = new Date( this.fechaSelected.string );
 
 		// Disparamos el evento
 
@@ -1929,6 +2049,9 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 	 * @param	{object}	ev			Objeto devuelto por el evento **click**
 	 */
 	_selectDay( ev ) {
+		this.selectAnyDate = true;
+
+		// Ponemos el nombre
 		this.fechaSelected.name = this.name;
 
 		// Quitamos los seleccionados
@@ -1955,15 +2078,15 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 
 		// Asignamos la fecha al objeto
 
-		this.fechaSelected.ano = this.fecha.ano;
-		this.fechaSelected.mes = this.fecha.mes + 1;
-		this.fechaSelected.dia = this.fecha.dia;
-		this.fechaSelected.hora = ( this.time ) ? this.fecha.hora: 0;
-		this.fechaSelected.minuto = ( this.time) ? this.fecha.minuto: 0;
+		this.fechaSelected.year = this.fecha.ano;
+		this.fechaSelected.month = this.fecha.mes + 1;
+		this.fechaSelected.day = this.fecha.dia;
+		this.fechaSelected.hour = ( this.time ) ? this.fecha.hora: 0;
+		this.fechaSelected.minute = ( this.time) ? this.fecha.minuto: 0;
 
 		// Ponemos el string
 
-		var string = this.fechaSelected.ano + "-" + this.fechaSelected.mes + "-" + this.fechaSelected.dia;
+		var string = this.fechaSelected.year + "-" + this.fechaSelected.month + "-" + this.fechaSelected.day;
 		if( this.time ) {
 			string += " " + this._printableHour( this.fechaSelected );
 		}
@@ -1973,17 +2096,20 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 		// Functión de formatear fecha
 
 		this.fechaSelected.format = {
-			numeric: this.getFormatDate(),
-			numericHour: this.getFormatDate( "numerica", false, true ),
-			short: this.getFormatDate( "corta" ),
-			shortHour: this.getFormatDate( "corta", false, true ),
-			shortDay: this.getFormatDate( "corta", true, false ),
-			shortFull: this.getFormatDate( "corta", true, true ),
-			long: this.getFormatDate( "larga" ),
-			longHour: this.getFormatDate( "larga", false, true ),
-			longDay: this.getFormatDate( "larga", true, false ),
-			longFull: this.getFormatDate( "larga", true, true )
-		}             
+			numeric: this._getFormatDate(),
+			numericHour: this._getFormatDate( "numerica", false, true ),
+			short: this._getFormatDate( "corta" ),
+			shortHour: this._getFormatDate( "corta", false, true ),
+			shortDay: this._getFormatDate( "corta", true, false ),
+			shortFull: this._getFormatDate( "corta", true, true ),
+			long: this._getFormatDate( "larga" ),
+			longHour: this._getFormatDate( "larga", false, true ),
+			longDay: this._getFormatDate( "larga", true, false ),
+			longFull: this._getFormatDate( "larga", true, true )
+		}
+		
+		// Asignamos el objeto de fecha
+		this.fechaSelected.date = new Date( this.fechaSelected.string );
 
 		// Disparamos el evento
 
