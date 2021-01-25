@@ -126,6 +126,7 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 
 				.cont_slider_calendar {
 					position: relative;
+					padding: 0 5px;
 					overflow: hidden;
 				}
 				.tabla_calendar {
@@ -498,13 +499,10 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 		// Dejamos de escuchar los eventos en el día actual
 		this._unlisteners();
 
-		// Vaciamos las divisiones
-		this.$.selectable_years.querySelector( ".slider" ).textContent = '';
-		this.$.selectable_months.querySelector( ".slider" ).textContent = '';
-		this.$.selectable_hour.querySelector( ".slider" ).textContent = '';
-		this.shadowRoot.querySelector( ".cont_slider_calendar" ).textContent = '';
-
+		// Creamos el calendarop
 		this._createCalendar();
+
+		// Ponemos a la escucha
 		this._listeners();
 
 		this.removeAttribute( "unresolved" );
@@ -792,11 +790,86 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 	}
 
 	/**
+	 * @method	_handleHourKeyPress
+	 * 
+	 * @param {event} ev 
+	 */
+	_handleHourKeyPress(ev) {
+		if( isNaN(ev.key) && ev.key !== ":" && ev.key !== "Enter" ) {
+			ev.preventDefault();
+		}
+	}
+
+	/**
+	 * @method	_handleHourKeyPress
+	 * 
+	 * @param {event} ev 
+	 */
+	_handleHourKeyUp(ev) {
+		const value = ev.target.value;
+		
+		if( value.length === 2 ) {
+			ev.target.value += ":";
+		}
+
+		if( value.length === 6 ) {
+			ev.target.value = ev.target.value.slice(0,-1);
+		}
+	}
+
+	/**
+	 * @method	_handleHourFocus
+	 * 
+	 * @param {event} ev 
+	 */
+	_handleHourFocus(ev) {
+		ev.target.setSelectionRange(0, ev.target.value.length)
+	}
+
+	/**
+	 * @method	_handleYearKeyPress
+	 * 
+	 * @param {event} ev 
+	 */
+	_handleYearKeyPress(ev) {
+		if( isNaN(ev.key) && ev.key !== "Enter" ) {
+			ev.preventDefault();
+		}
+	}
+
+	/**
+	 * @method	_handleYearKeyUp
+	 * 
+	 * @param {event} ev 
+	 */
+	_handleYearKeyUp(ev) {
+		const value = ev.target.value;
+
+		if( value.length === 5 ) {
+			ev.target.value = ev.target.value.slice(0,-1);
+		}
+	}
+
+	/**
+	 * @method	_handleYearFocus
+	 * 
+	 * @param {event} ev 
+	 */
+	_handleYearFocus(ev) {
+		ev.target.setSelectionRange(0, ev.target.value.length)
+	}
+
+	/**
 	 * @method	_createCalendar
 	 * 
 	 * Crea el calendario del componente.
 	 */
 	_createCalendar() {
+		this.$.selectable_years.querySelector( ".slider" ).textContent = '';
+		this.$.selectable_months.querySelector( ".slider" ).textContent = '';
+		this.$.selectable_hour.querySelector( ".slider" ).textContent = '';
+		this.shadowRoot.querySelector( ".cont_slider_calendar" ).textContent = '';
+
 		// Damos formato a la fecha
 
 		var fecha = new Date();
@@ -837,17 +910,26 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 		var divAnoAnt = document.createElement( "DIV" );
 		this.inputsYears.ant = document.createElement( "INPUT" );
 		this.inputsYears.ant.value = this.fecha.ano - 1;
+		this.inputsYears.ant.onkeydown = this._handleYearKeyPress;
+		this.inputsYears.ant.onkeyup = this._handleYearKeyUp;
+		this.inputsYears.ant.onfocus = this._handleYearFocus;
 		divAnoAnt.appendChild( this.inputsYears.ant );
 
 		var divAnoAct = document.createElement( "DIV" );
 		divAnoAct.setAttribute( "active", "" );
 		this.inputsYears.act = document.createElement( "INPUT" );
+		this.inputsYears.act.onkeydown = this._handleYearKeyPress;
+		this.inputsYears.act.onkeyup = this._handleYearKeyUp;
+		this.inputsYears.act.onfocus = this._handleYearFocus;
 		this.inputsYears.act.value = this.fecha.ano;
 		divAnoAct.appendChild( this.inputsYears.act );
 
 
 		var divAnoSig = document.createElement( "DIV" );
 		this.inputsYears.sig = document.createElement( "INPUT" );
+		this.inputsYears.sig.onkeydown = this._handleYearKeyPress;
+		this.inputsYears.sig.onkeyup = this._handleYearKeyUp;
+		this.inputsYears.sig.onfocus = this._handleYearFocus;
 		this.inputsYears.sig.value = this.fecha.ano + 1;
 		divAnoSig.appendChild( this.inputsYears.sig );
 
@@ -904,17 +986,26 @@ class AwCalendarSimple extends AwExternsFunctionsMixin( PolymerElement ) {
 			var divHoraAnt = document.createElement( "DIV" );
 			this.inputsHours.ant = document.createElement( "INPUT" );
 			this.inputsHours.ant.value = this._printableHour( previusQuarter );
+			this.inputsHours.ant.onkeydown = this._handleHourKeyPress;
+			this.inputsHours.ant.onkeyup = this._handleHourKeyUp;
+			this.inputsHours.ant.onfocus = this._handleHourFocus;
 			divHoraAnt.appendChild( this.inputsHours.ant );
 
 			var divHoraAct = document.createElement( "DIV" );
 			divHoraAct.setAttribute( "active", "" );
 			this.inputsHours.act = document.createElement( "INPUT" );
 			this.inputsHours.act.value = this._printableHour( this.fecha );
+			this.inputsHours.act.onkeydown = this._handleHourKeyPress;
+			this.inputsHours.act.onkeyup = this._handleHourKeyUp;
+			this.inputsHours.act.onfocus = this._handleHourFocus;
 			divHoraAct.appendChild( this.inputsHours.act );
 			
 			var divHoraSig = document.createElement( "DIV" );
 			this.inputsHours.sig = document.createElement( "INPUT" );
 			this.inputsHours.sig.value = this._printableHour( nextQuarter );
+			this.inputsHours.sig.onkeydown = this._handleHourKeyPress;
+			this.inputsHours.sig.onkeyup = this._handleHourKeyUp;
+			this.inputsHours.sig.onfocus = this._handleHourFocus;
 			divHoraSig.appendChild( this.inputsHours.sig );
 
 			this.$.selectable_hour.style.display = "block";

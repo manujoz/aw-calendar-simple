@@ -1,6 +1,6 @@
 {
 	"name": "aw_calendar",
-	"version": "2.1.1",
+	"version": "2.2.0",
 	"description": "Calendario realizado en Polymer 3",
 	"keywords": [
 		"Polymer",
@@ -16,5 +16,6 @@
 		"aw_polymer_3": "^1.1.0",
 		"aw_extern_functions": "^2.0.0"
 	},
+	"types": "./index.d.ts",
 	"license": "ISC"
 }
